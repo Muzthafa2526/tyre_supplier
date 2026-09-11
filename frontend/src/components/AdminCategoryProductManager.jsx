@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import api, { getMediaUrl } from "../api/axios";
 import {
     FiImage,
@@ -1162,21 +1163,30 @@ export default function AdminCategoryProductManager({ onProductUpdated }) {
             </div>
 
             {/* ── 4. SINGLE PRODUCT ADD / EDIT MODAL ── */}
-            {isProductModalOpen && (
-                <div style={{
-                    position: "fixed",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: "rgba(0,0,0,0.75)",
-                    backdropFilter: "blur(4px)",
-                    zIndex: 2000,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "20px"
-                }}>
+            {isProductModalOpen && createPortal(
+                <div
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) setIsProductModalOpen(false);
+                    }}
+                    style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        width: "100vw",
+                        height: "100vh",
+                        backgroundColor: "rgba(0,0,0,0.75)",
+                        backdropFilter: "blur(6px)",
+                        WebkitBackdropFilter: "blur(6px)",
+                        zIndex: 99999,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "20px",
+                        boxSizing: "border-box"
+                    }}
+                >
                     <div style={{
                         backgroundColor: "var(--bg-card)",
                         border: "1px solid var(--border-card)",
@@ -1186,7 +1196,9 @@ export default function AdminCategoryProductManager({ onProductUpdated }) {
                         maxHeight: "90vh",
                         overflowY: "auto",
                         padding: "28px",
-                        boxShadow: "var(--shadow-lg)"
+                        boxShadow: "var(--shadow-lg)",
+                        position: "relative",
+                        zIndex: 100000
                     }} className="animate-fade-in">
                         {/* Modal Header */}
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
@@ -1530,7 +1542,8 @@ export default function AdminCategoryProductManager({ onProductUpdated }) {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
         </div>
