@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import { FiMenu, FiX, FiHome, FiGrid, FiLock, FiPhone, FiCheckCircle } from 'react-icons/fi';
+import { FaWhatsapp } from 'react-icons/fa';
 import { GiCarWheel } from 'react-icons/gi';
 
 function Navbar() {
@@ -173,6 +174,28 @@ function Navbar() {
 
                 {/* Mobile Menu & Theme Button */}
                 <div style={{ display: 'none', alignItems: 'center', gap: '8px' }} className="mobile-actions">
+                    <a
+                        href="https://wa.me/918848493933"
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '5px',
+                            padding: '7px 11px',
+                            borderRadius: '9px',
+                            backgroundColor: 'rgba(37, 211, 102, 0.15)',
+                            color: '#25D366',
+                            border: '1px solid rgba(37, 211, 102, 0.35)',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            textDecoration: 'none',
+                            flexShrink: 0
+                        }}
+                    >
+                        <FaWhatsapp size={15} /> <span>WhatsApp</span>
+                    </a>
                     <ThemeToggle showLabel={false} />
                     <button
                         onClick={() => setMobileOpen(!mobileOpen)}
