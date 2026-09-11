@@ -14,7 +14,15 @@ export function getDefaultTyreImage(product) {
     const material = (product.material || "").toLowerCase();
 
     // 1. Bike & Scooter
-    if (cat.includes("bike") || cat.includes("scooter") || cat.includes("2w") || rim.includes("scooter") || rim.includes("motorcycle") || material.includes("activa") || material.includes("splendor") || material.includes("pulsar") || material.includes("fz") || material.includes("jupiter")) {
+    if (
+        cat.includes("bike") || cat.includes("scooter") || cat.includes("2w") || cat.includes("two") || cat.includes("motorcycle") ||
+        rim.includes("scooter") || rim.includes("motorcycle") || rim.includes("10") || rim.includes("12") ||
+        material.includes("actigrip") || material.includes("actizip") || material.includes("actisteer") || material.includes("actizoom") ||
+        material.includes("tramplr") || material.includes("alpha") || material.includes("wav") ||
+        material.includes("activa") || material.includes("splendor") || material.includes("pulsar") || material.includes("fz") || material.includes("jupiter") ||
+        material.includes("3.50-10") || material.includes("3.00-10") || material.includes("90/100-10") || material.includes("90/90-12") ||
+        material.includes("100/80-12") || material.includes("110/80-12") || material.includes("110/70-12") || material.includes("110/90-10")
+    ) {
         return "/images/tyres/bike_scooter.jpg";
     }
 
