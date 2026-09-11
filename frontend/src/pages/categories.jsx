@@ -22,7 +22,15 @@ function getDefaultTyreImage(product) {
     const material = (product.material || "").toLowerCase();
 
     // 1. Bike & Scooter
-    if (cat.includes("bike") || cat.includes("scooter") || cat.includes("2w") || rim.includes("scooter") || rim.includes("motorcycle") || material.includes("activa") || material.includes("splendor") || material.includes("pulsar") || material.includes("fz") || material.includes("jupiter")) {
+    if (
+        cat.includes("bike") || cat.includes("scooter") || cat.includes("2w") || cat.includes("two") || cat.includes("motorcycle") ||
+        rim.includes("scooter") || rim.includes("motorcycle") || rim.includes("10") || rim.includes("12") ||
+        material.includes("actigrip") || material.includes("actizip") || material.includes("actisteer") || material.includes("actizoom") ||
+        material.includes("tramplr") || material.includes("alpha") || material.includes("wav") ||
+        material.includes("activa") || material.includes("splendor") || material.includes("pulsar") || material.includes("fz") || material.includes("jupiter") ||
+        material.includes("3.50-10") || material.includes("3.00-10") || material.includes("90/100-10") || material.includes("90/90-12") ||
+        material.includes("100/80-12") || material.includes("110/80-12") || material.includes("110/70-12") || material.includes("110/90-10")
+    ) {
         return "/images/tyres/bike_scooter.jpg";
     }
 
@@ -125,6 +133,59 @@ const DEFAULT_FALLBACK_SLIDES = [
     }
 ];
 
+// Exact Popular Bike & Scooty tyres requested
+const POPULAR_TYRE_PATTERNS = [
+    { size: "90/100", pattern: "s5", label: "90/100-10 S5" },
+    { size: "90/100", pattern: "s1", label: "90/100-10 S1" },
+    { size: "90/90-12", pattern: "s2", label: "90/90-12 S2" },
+    { size: "90/90-12", pattern: "s5", label: "90/90-12 S5" },
+    { size: "100/80-12", pattern: "", label: "100/80-12" },
+    { size: "110/80-12", pattern: "", label: "110/80-12" },
+    { size: "110/70-12", pattern: "", label: "110/70-12 EV" },
+    { size: "110/90-10", pattern: "", label: "110/90-10 Scooty" },
+    { size: "3.50-10", pattern: "s3", label: "3.50-10 S3 TT" },
+    { size: "3.50-10", pattern: "s6", label: "3.50-10 S6 TT" },
+];
+
+function isBikeProduct(prod, cats = []) {
+    if (!prod) return false;
+    const catName = (prod.category_name || (typeof prod.category === "string" ? prod.category : "") || "").toLowerCase();
+    const mat = (prod.material || "").toLowerCase();
+    const rim = (prod.rim_size || "").toLowerCase();
+
+    // Direct category name check
+    if (catName.includes("bike") || catName.includes("scooter") || catName.includes("2w") || catName.includes("two") || catName.includes("motorcycle")) {
+        return true;
+    }
+
+    // Match category ID with categories list
+    if (prod.category_id || prod.category) {
+        const catObj = cats.find(c => c.id === prod.category_id || c.id === prod.category || c.name === prod.category);
+        if (catObj) {
+            const cn = (catObj.name || "").toLowerCase();
+            if (cn.includes("bike") || cn.includes("scooter") || cn.includes("2w") || cn.includes("two") || cn.includes("motorcycle")) {
+                return true;
+            }
+        }
+    }
+
+    // Two-wheeler tyre model names & pattern keywords (Apollo Acti series, commuter bikes, scooters)
+    if (
+        mat.includes("actigrip") || mat.includes("actizoom") || mat.includes("actizip") ||
+        mat.includes("actisteer") || mat.includes("wav") || mat.includes("tramplr") ||
+        mat.includes("activa") || mat.includes("splendor") || mat.includes("pulsar") ||
+        mat.includes("jupiter") || mat.includes("fz") || mat.includes("access") ||
+        mat.includes("dio") || mat.includes("shine") || mat.includes("glamour") ||
+        mat.includes("bullet") || mat.includes("classic") || mat.includes("scooter") ||
+        mat.includes("motorcycle") || mat.includes("2w") || rim.includes("scooter") ||
+        rim.includes("motorcycle") || rim.includes("2w")
+    ) {
+        return true;
+    }
+
+    return false;
+}
+
 export default function Categories() {
     const [categories, setCategories] = useState([]);
     const [popularProducts, setPopularProducts] = useState([]);
@@ -138,7 +199,14 @@ export default function Categories() {
     useEffect(() => {
         setLoading(true);
         Promise.all([
-            api.get("/api/categories/list/").then(res => setCategories(Array.isArray(res.data) ? res.data : [])).catch(() => setCategories([])),
+            api.get("/api/categories/list/").then(res => {
+                const cats = Array.isArray(res.data) ? res.data : [];
+                setCategories(cats);
+                return cats;
+            }).catch(() => {
+                setCategories([]);
+                return [];
+            }),
             api.get("/api/categories/banner/").then(res => {
                 let list = [];
                 if (Array.isArray(res.data)) {
@@ -149,10 +217,35 @@ export default function Categories() {
                 setBanners(list);
             }).catch(() => setBanners([])),
             api.get("/api/products/").then(res => {
-                const all = Array.isArray(res.data) ? res.data : (res.data?.results || []);
-                setPopularProducts(all.slice(0, 8));
-            }).catch(() => setPopularProducts([]))
-        ]).finally(() => setLoading(false));
+                const prods = Array.isArray(res.data) ? res.data : (res.data?.results || []);
+                return prods;
+            }).catch(() => [])
+        ]).then(([cats, , prods]) => {
+            if (prods && prods.length > 0) {
+                // Find the exact popular Bike & Scooty tyres requested
+                const matchedPopular = [];
+                POPULAR_TYRE_PATTERNS.forEach(({ size, pattern }) => {
+                    const match = prods.find(p => {
+                        const m = (p.material || "").toLowerCase();
+                        const r = (p.rim_size || "").toLowerCase();
+                        const sizeNorm = size.toLowerCase().replace(/\//g, "[/\\-\\s]");
+                        const re = new RegExp(sizeNorm);
+                        const matchesSize = re.test(m) || re.test(r) || m.includes(size.toLowerCase());
+                        const matchesPattern = !pattern || m.includes(pattern.toLowerCase());
+                        return matchesSize && matchesPattern && !matchedPopular.some(item => item.id === p.id);
+                    });
+                    if (match) matchedPopular.push(match);
+                });
+
+                // Supplement if needed with other bike & scooty products
+                if (matchedPopular.length < 10) {
+                    const otherBikeProds = prods.filter(p => isBikeProduct(p, cats) && !matchedPopular.some(item => item.id === p.id));
+                    matchedPopular.push(...otherBikeProds.slice(0, 10 - matchedPopular.length));
+                }
+
+                setPopularProducts(matchedPopular);
+            }
+        }).finally(() => setLoading(false));
     }, []);
 
     // Combine uploaded banners with curated fallback slides if needed
@@ -257,10 +350,10 @@ export default function Categories() {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "space-between",
-                            padding: "clamp(24px, 5vw, 55px) clamp(24px, 6vw, 75px)",
+                            padding: "clamp(18px, 4.5vw, 55px) clamp(16px, 5.5vw, 75px)",
                             color: "#ffffff",
                             overflow: "hidden"
-                        }}>
+                        }} className="banner-hero-content">
                             {/* Background Ambient Glow */}
                             <div style={{
                                 position: "absolute",
@@ -275,32 +368,32 @@ export default function Categories() {
                             }} />
 
                             {/* Left Text Block */}
-                            <div style={{ maxWidth: "620px", zIndex: 2 }}>
+                            <div style={{ maxWidth: "620px", zIndex: 2 }} className="banner-hero-text">
                                 <div style={{
                                     display: "inline-flex",
                                     alignItems: "center",
                                     gap: "8px",
-                                    padding: "6px 14px",
+                                    padding: "5px 12px",
                                     borderRadius: "30px",
                                     backgroundColor: "rgba(255,255,255,0.12)",
                                     backdropFilter: "blur(8px)",
                                     border: `1px solid ${currentBannerItem.accent}66`,
                                     color: currentBannerItem.accent,
-                                    fontSize: "12px",
+                                    fontSize: "clamp(10px, 2.2vw, 12px)",
                                     fontWeight: "800",
-                                    letterSpacing: "1.5px",
+                                    letterSpacing: "1.2px",
                                     textTransform: "uppercase",
-                                    marginBottom: "16px"
+                                    marginBottom: "12px"
                                 }}>
-                                    <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", backgroundColor: currentBannerItem.accent }} />
+                                    <span style={{ display: "inline-block", width: "7px", height: "7px", borderRadius: "50%", backgroundColor: currentBannerItem.accent }} />
                                     {currentBannerItem.badge}
                                 </div>
 
                                 <h2 style={{
-                                    fontSize: "clamp(24px, 4vw, 44px)",
+                                    fontSize: "clamp(20px, 3.8vw, 44px)",
                                     fontWeight: "900",
                                     lineHeight: 1.15,
-                                    marginBottom: "12px",
+                                    marginBottom: "8px",
                                     color: "#ffffff",
                                     textShadow: "0 2px 10px rgba(0,0,0,0.5)"
                                 }}>
@@ -308,22 +401,22 @@ export default function Categories() {
                                 </h2>
 
                                 <p style={{
-                                    fontSize: "clamp(13px, 1.8vw, 16px)",
+                                    fontSize: "clamp(12px, 1.6vw, 15px)",
                                     color: "rgba(255, 255, 255, 0.85)",
-                                    lineHeight: 1.5,
-                                    marginBottom: "24px"
+                                    lineHeight: 1.45,
+                                    marginBottom: "18px"
                                 }}>
                                     {currentBannerItem.subtitle}
                                 </p>
 
-                                <div style={{ display: "flex", gap: "14px", alignItems: "center", flexWrap: "wrap" }}>
+                                <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             navigate("/products");
                                         }}
                                         className="btn-primary"
-                                        style={{ padding: "12px 26px", fontSize: "14px" }}
+                                        style={{ padding: "10px 22px", fontSize: "13.5px" }}
                                     >
                                         {currentBannerItem.btnText} <FiArrowRight />
                                     </button>
@@ -333,21 +426,22 @@ export default function Categories() {
                             {/* Right Tyre Showcase Graphic */}
                             <div style={{
                                 zIndex: 2,
-                                display: "none",
+                                display: "flex",
                                 position: "relative",
-                                width: "clamp(180px, 24vw, 320px)",
+                                width: "clamp(115px, 25vw, 320px)",
                                 height: "100%",
                                 alignItems: "center",
-                                justifyContent: "center"
+                                justifyContent: "center",
+                                flexShrink: 0
                             }} className="banner-hero-graphic">
                                 <img
                                     src={currentBannerItem.tyreImg}
                                     alt="Apollo Tyre Banner"
                                     style={{
-                                        maxHeight: "90%",
+                                        maxHeight: "92%",
                                         maxWidth: "100%",
                                         objectFit: "contain",
-                                        filter: "drop-shadow(0 15px 30px rgba(0,0,0,0.7))",
+                                        filter: "drop-shadow(0 12px 26px rgba(0,0,0,0.7))",
                                         animation: "floatAnim 6s ease-in-out infinite"
                                     }}
                                 />
@@ -808,9 +902,32 @@ export default function Categories() {
             </main>
 
             <style>{`
-                @media (min-width: 768px) {
+                .banner-hero-graphic {
+                    display: flex !important;
+                }
+                @media (max-width: 768px) {
+                    .banner-hero-content {
+                        padding: 16px 14px 16px 18px !important;
+                        gap: 8px !important;
+                    }
+                    .banner-hero-text {
+                        max-width: 62% !important;
+                    }
                     .banner-hero-graphic {
-                        display: flex !important;
+                        width: clamp(95px, 30vw, 150px) !important;
+                        height: clamp(95px, 30vw, 150px) !important;
+                    }
+                }
+                @media (max-width: 440px) {
+                    .banner-hero-content {
+                        padding: 14px 10px 14px 14px !important;
+                    }
+                    .banner-hero-text {
+                        max-width: 60% !important;
+                    }
+                    .banner-hero-graphic {
+                        width: 95px !important;
+                        height: 95px !important;
                     }
                 }
                 .categories-grid-5 {
