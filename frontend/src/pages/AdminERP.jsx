@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import api, { getMediaUrl } from "../api/axios";
 import ThemeToggle from "../components/ThemeToggle";
 import AdminCategoryProductManager from "../components/AdminCategoryProductManager";
@@ -1862,9 +1863,7 @@ function AdminERP() {
                                         borderRadius: "8px",
                                         backgroundColor: "rgba(16, 185, 129, 0.15)",
                                         border: "1px solid #10b981",
-                                        color: "#10b981",
-                                        fontWeight: "600",
-                                        fontSize: "13px"
+                                        color: "#10b981"
                                     }}>
                                         {bannerMsg}
                                     </div>
@@ -1874,18 +1873,26 @@ function AdminERP() {
                     )}
 
                     {/* ── MODAL: GST TAX BILL & INVOICE (ONLY ON SALE COMPLETION) ── */}
-                    {selectedInvoiceOrder && (
-                        <div style={{
-                            position: "fixed",
-                            top: 0, left: 0, right: 0, bottom: 0,
-                            backgroundColor: "rgba(0, 0, 0, 0.8)",
-                            backdropFilter: "blur(6px)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            zIndex: 2500,
-                            padding: "20px"
-                        }} className="animate-fade-in">
+                    {selectedInvoiceOrder && createPortal(
+                        <div
+                            onClick={(e) => {
+                                if (e.target === e.currentTarget) setSelectedInvoiceOrder(null);
+                            }}
+                            style={{
+                                position: "fixed",
+                                top: 0, left: 0, right: 0, bottom: 0,
+                                width: "100vw",
+                                height: "100vh",
+                                backgroundColor: "rgba(0, 0, 0, 0.8)",
+                                backdropFilter: "blur(6px)",
+                                WebkitBackdropFilter: "blur(6px)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                zIndex: 99999,
+                                padding: "20px",
+                                boxSizing: "border-box"
+                            }} className="animate-fade-in">
                             <div style={{
                                 backgroundColor: "#ffffff",
                                 color: "#0f172a",
@@ -1928,172 +1935,159 @@ function AdminERP() {
                                         </p>
                                     </div>
                                     <div style={{ textAlign: "right" }}>
-                                        <div style={{ fontSize: "18px", fontWeight: "900", color: "#d97706", letterSpacing: "1px" }}>
-                                            TAX INVOICE
+                                        <span style={{
+                                            display: "inline-block",
+                                            padding: "4px 10px",
+                                            borderRadius: "6px",
+                                            backgroundColor: "#dcfce7",
+                                            color: "#166534",
+                                            fontSize: "12px",
+                                            fontWeight: "800",
+                                            letterSpacing: "0.5px"
+                                        }}>
+                                            PAID & DISPATCHED
+                                        </span>
+                                        <div style={{ fontSize: "12px", color: "#64748b", marginTop: "6px" }}>
+                                            Inv No: <strong>INV-{selectedInvoiceOrder.id}-{new Date(selectedInvoiceOrder.created_at || Date.now()).getFullYear()}</strong>
                                         </div>
-                                        <div style={{ fontSize: "13px", fontWeight: "700", marginTop: "4px" }}>
-                                            Invoice No: INV-2026-{String(selectedInvoiceOrder.id).padStart(4, "0")}
-                                        </div>
-                                        <div style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>
-                                            Date: {new Date(selectedInvoiceOrder.created_at).toLocaleDateString("en-IN")}
+                                        <div style={{ fontSize: "12px", color: "#64748b" }}>
+                                            Date: {new Date(selectedInvoiceOrder.created_at || Date.now()).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Billed To & Status */}
-                                <div className="modal-grid-2" style={{ marginBottom: "20px", fontSize: "13px" }}>
-                                    <div style={{ backgroundColor: "#f8fafc", padding: "12px 14px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
-                                        <div style={{ fontWeight: "800", color: "#64748b", textTransform: "uppercase", fontSize: "11px", marginBottom: "4px" }}>
-                                            BILLED TO CUSTOMER:
+                                {/* Bill To / Customer Details */}
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px", padding: "14px", borderRadius: "10px", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                                    <div>
+                                        <div style={{ fontSize: "11px", fontWeight: "800", color: "#94a3b8", textTransform: "uppercase", marginBottom: "4px" }}>
+                                            Billed To Customer
                                         </div>
                                         <div style={{ fontSize: "15px", fontWeight: "800", color: "#0f172a" }}>
                                             {selectedInvoiceOrder.customer_name}
                                         </div>
-                                        <div style={{ color: "#475569", marginTop: "2px" }}>
-                                            Phone: +91 {selectedInvoiceOrder.customer_phone}
+                                        <div style={{ fontSize: "13px", color: "#475569", marginTop: "2px" }}>
+                                            Phone: {selectedInvoiceOrder.phone || selectedInvoiceOrder.customer_phone}
                                         </div>
-                                        {selectedInvoiceOrder.notes && (
-                                            <div style={{ color: "#64748b", fontSize: "12px", marginTop: "4px" }}>
-                                                Order Note: {selectedInvoiceOrder.notes}
+                                        {selectedInvoiceOrder.address && (
+                                            <div style={{ fontSize: "13px", color: "#475569", marginTop: "2px" }}>
+                                                Address: {selectedInvoiceOrder.address}
                                             </div>
                                         )}
                                     </div>
-
-                                    <div style={{ backgroundColor: "#f8fafc", padding: "12px 14px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
-                                        <div style={{ fontWeight: "800", color: "#64748b", textTransform: "uppercase", fontSize: "11px", marginBottom: "4px" }}>
-                                            SALE STATUS & DISPATCH:
-                                        </div>
-                                        <div style={{ fontSize: "14px", fontWeight: "800", color: "#10b981", display: "flex", alignItems: "center", gap: "6px" }}>
-                                            <FiCheck /> SALE COMPLETED
-                                        </div>
-                                        <div style={{ color: "#475569", fontSize: "12px", marginTop: "4px" }}>
-                                            Stock Status: Deducted from Warehouse
-                                        </div>
-                                        <div style={{ color: "#475569", fontSize: "12px", marginTop: "2px" }}>
-                                            Payment Mode: Cash on Delivery / Direct Bank
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Items Table with Scroll Wrapper */}
-                                <div style={{ width: "100%", overflowX: "auto", WebkitOverflowScrolling: "touch", marginBottom: "20px" }}>
-                                    <table style={{ width: "100%", minWidth: "520px", borderCollapse: "collapse", fontSize: "13px" }}>
-                                        <thead>
-                                            <tr style={{ backgroundColor: "#0f172a", color: "#ffffff", textAlign: "left" }}>
-                                                <th style={{ padding: "10px 12px", fontSize: "12px" }}>#</th>
-                                                <th style={{ padding: "10px 12px", fontSize: "12px" }}>Item Description</th>
-                                                <th style={{ padding: "10px 12px", fontSize: "12px" }}>HSN/SKU</th>
-                                                <th style={{ padding: "10px 12px", textAlign: "center", fontSize: "12px" }}>Qty</th>
-                                                <th style={{ padding: "10px 12px", textAlign: "right", fontSize: "12px" }}>Unit Rate</th>
-                                                <th style={{ padding: "10px 12px", textAlign: "right", fontSize: "12px" }}>Amount (₹)</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {selectedInvoiceOrder.items?.map((item, idx) => (
-                                                <tr key={idx} style={{ borderBottom: "1px solid #e2e8f0" }}>
-                                                    <td style={{ padding: "10px 12px", color: "#64748b" }}>{idx + 1}</td>
-                                                    <td style={{ padding: "10px 12px", fontWeight: "600" }}>
-                                                        {item.product_name}
-                                                        {item.rim_size && <span style={{ fontSize: "11px", color: "#64748b", marginLeft: "6px" }}>({item.rim_size})</span>}
-                                                    </td>
-                                                    <td style={{ padding: "10px 12px", fontFamily: "monospace", fontSize: "12px", color: "#475569" }}>
-                                                        {item.material_code || "4011"}
-                                                    </td>
-                                                    <td style={{ padding: "10px 12px", textAlign: "center", fontWeight: "700" }}>{item.quantity}</td>
-                                                    <td style={{ padding: "10px 12px", textAlign: "right" }}>₹{Number(item.unit_price || 0).toLocaleString("en-IN")}</td>
-                                                    <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: "700" }}>
-                                                        ₹{(Number(item.unit_price || 0) * item.quantity).toLocaleString("en-IN")}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                {/* GST Calculations & Total Breakdown */}
-                                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "24px" }}>
-                                    <div style={{ width: "290px", maxWidth: "100%", fontSize: "13px" }}>
-                                        <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", color: "#475569" }}>
-                                            <span>Taxable Value (Base):</span>
-                                            <span style={{ fontWeight: "600" }}>
-                                                ₹{(Number(selectedInvoiceOrder.total_amount || 0) / 1.28).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </span>
-                                        </div>
-                                        <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", color: "#475569" }}>
-                                            <span>CGST (14%):</span>
-                                            <span style={{ fontWeight: "600" }}>
-                                                ₹{((Number(selectedInvoiceOrder.total_amount || 0) - (Number(selectedInvoiceOrder.total_amount || 0) / 1.28)) / 2).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </span>
-                                        </div>
-                                        <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", color: "#475569" }}>
-                                            <span>SGST (14%):</span>
-                                            <span style={{ fontWeight: "600" }}>
-                                                ₹{((Number(selectedInvoiceOrder.total_amount || 0) - (Number(selectedInvoiceOrder.total_amount || 0) / 1.28)) / 2).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </span>
-                                        </div>
-                                        <div style={{
-                                            display: "flex",
-                                            justifyContent: "space-between",
-                                            padding: "8px 0",
-                                            borderTop: "2px solid #0f172a",
-                                            fontWeight: "900",
-                                            fontSize: "16px",
-                                            color: "#0f172a",
-                                            marginTop: "6px"
-                                        }}>
-                                            <span>Invoice Grand Total:</span>
-                                            <span>₹{Number(selectedInvoiceOrder.total_amount || 0).toLocaleString("en-IN")}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Terms & Signatory */}
-                                <div className="modal-grid-2" style={{ borderTop: "1px solid #e2e8f0", paddingTop: "16px", fontSize: "11px", color: "#64748b" }}>
-                                    <div>
-                                        <strong style={{ color: "#0f172a" }}>Terms & Conditions:</strong>
-                                        <p style={{ margin: "2px 0 0 0" }}>
-                                            1. All goods supplied are backed by manufacturer warranty.<br />
-                                            2. Subject to local jurisdiction.
-                                        </p>
-                                    </div>
                                     <div style={{ textAlign: "right" }}>
-                                        <p style={{ margin: "0 0 20px 0", fontWeight: "700", color: "#0f172a" }}>For APPOLO TYRES DISTRIBUTORS</p>
-                                        <div style={{ borderTop: "1px dashed #94a3b8", display: "inline-block", padding: "4px 20px 0 20px" }}>
-                                            Authorized Signatory
+                                        <div style={{ fontSize: "11px", fontWeight: "800", color: "#94a3b8", textTransform: "uppercase", marginBottom: "4px" }}>
+                                            Order Details
+                                        </div>
+                                        <div style={{ fontSize: "13px", color: "#475569" }}>
+                                            Order ID: <strong>#{selectedInvoiceOrder.id}</strong>
+                                        </div>
+                                        <div style={{ fontSize: "13px", color: "#475569" }}>
+                                            Status: <strong style={{ color: "#166534" }}>Completed</strong>
+                                        </div>
+                                        <div style={{ fontSize: "13px", color: "#475569" }}>
+                                            Channel: Direct Web Order
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Print Action */}
-                                <div className="no-print" style={{ display: "flex", gap: "12px", justifyContent: "flex-end", flexWrap: "wrap", borderTop: "1px solid #e2e8f0", paddingTop: "18px", marginTop: "20px" }}>
-                                    <button
-                                        onClick={() => setSelectedInvoiceOrder(null)}
-                                        className="btn-secondary"
-                                        style={{ padding: "10px 18px", fontSize: "13px" }}
-                                    >
-                                        Close
-                                    </button>
-                                    <button
-                                        onClick={() => window.print()}
-                                        style={{
-                                            padding: "10px 22px",
-                                            borderRadius: "8px",
-                                            backgroundColor: "#0f172a",
-                                            color: "#fff",
-                                            fontWeight: "700",
-                                            fontSize: "14px",
-                                            border: "none",
-                                            cursor: "pointer",
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            gap: "8px"
-                                        }}
-                                    >
-                                        <FiPrinter /> Print Official GST Invoice
-                                    </button>
+                                {/* Items Table */}
+                                <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "20px" }}>
+                                    <thead>
+                                        <tr style={{ backgroundColor: "#0f172a", color: "#fff", fontSize: "12px", textTransform: "uppercase" }}>
+                                            <th style={{ padding: "10px 12px", textAlign: "left", borderRadius: "6px 0 0 6px" }}>Item Description</th>
+                                            <th style={{ padding: "10px 12px", textAlign: "center" }}>Type</th>
+                                            <th style={{ padding: "10px 12px", textAlign: "center" }}>Qty</th>
+                                            <th style={{ padding: "10px 12px", textAlign: "right" }}>Rate (₹)</th>
+                                            <th style={{ padding: "10px 12px", textAlign: "right", borderRadius: "0 6px 6px 0" }}>Amount (₹)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr style={{ borderBottom: "1px solid #e2e8f0", fontSize: "13px" }}>
+                                            <td style={{ padding: "12px" }}>
+                                                <div style={{ fontWeight: "700", color: "#0f172a" }}>{selectedInvoiceOrder.product_name || selectedInvoiceOrder.items?.[0]?.product_name || "Apollo High-Performance Tyre"}</div>
+                                                <div style={{ fontSize: "11px", color: "#64748b" }}>HSN Code: 4011 (Rubber Tyres)</div>
+                                            </td>
+                                            <td style={{ padding: "12px", textAlign: "center", color: "#64748b" }}>
+                                                {selectedInvoiceOrder.product_type || selectedInvoiceOrder.items?.[0]?.product_type || "TL"}
+                                            </td>
+                                            <td style={{ padding: "12px", textAlign: "center", fontWeight: "700", color: "#0f172a" }}>
+                                                {selectedInvoiceOrder.quantity || selectedInvoiceOrder.items?.[0]?.quantity || 1} units
+                                            </td>
+                                            <td style={{ padding: "12px", textAlign: "right", color: "#0f172a" }}>
+                                                ₹{Number(selectedInvoiceOrder.product_price || (Number(selectedInvoiceOrder.total_amount || selectedInvoiceOrder.total_price || 0) / (selectedInvoiceOrder.quantity || 1))).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                            </td>
+                                            <td style={{ padding: "12px", textAlign: "right", fontWeight: "800", color: "#0f172a" }}>
+                                                ₹{Number(selectedInvoiceOrder.total_amount || selectedInvoiceOrder.total_price || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                                {/* Totals Breakdown */}
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
+                                    <div style={{ fontSize: "12px", color: "#64748b", maxWidth: "340px" }}>
+                                        <p style={{ margin: "0 0 4px 0", fontWeight: "700", color: "#0f172a" }}>Terms & Conditions:</p>
+                                        <p style={{ margin: 0 }}>Goods once sold will not be taken back or exchanged. Warranty claims are subject to Apollo Tyres standard manufacturer warranty policy.</p>
+                                    </div>
+                                    <div style={{ minWidth: "220px" }}>
+                                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", color: "#64748b", marginBottom: "6px" }}>
+                                            <span>Subtotal (Base):</span>
+                                            <span style={{ fontWeight: "600", color: "#0f172a" }}>
+                                                ₹{(Number(selectedInvoiceOrder.total_amount || selectedInvoiceOrder.total_price || 0) / 1.28).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </span>
+                                        </div>
+                                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>
+                                            <span>CGST (14%):</span>
+                                            <span>₹{((Number(selectedInvoiceOrder.total_amount || selectedInvoiceOrder.total_price || 0) - (Number(selectedInvoiceOrder.total_amount || selectedInvoiceOrder.total_price || 0) / 1.28)) / 2).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        </div>
+                                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#64748b", marginBottom: "8px" }}>
+                                            <span>SGST (14%):</span>
+                                            <span>₹{((Number(selectedInvoiceOrder.total_amount || selectedInvoiceOrder.total_price || 0) - (Number(selectedInvoiceOrder.total_amount || selectedInvoiceOrder.total_price || 0) / 1.28)) / 2).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        </div>
+                                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "16px", fontWeight: "900", color: "#0f172a", borderTop: "2px solid #0f172a", paddingTop: "8px" }}>
+                                            <span>Grand Total:</span>
+                                            <span style={{ color: "#166534" }}>₹{Number(selectedInvoiceOrder.total_amount || selectedInvoiceOrder.total_price || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Authorized Signatory & Print Button */}
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderTop: "1px dashed #cbd5e1", paddingTop: "16px", marginTop: "16px" }}>
+                                    <div>
+                                        <div style={{ fontSize: "11px", color: "#94a3b8" }}>Generated automatically by Apollo ERP on</div>
+                                        <div style={{ fontSize: "12px", color: "#475569", fontWeight: "600" }}>{new Date().toLocaleString("en-IN")}</div>
+                                    </div>
+                                    <div className="no-print" style={{ display: "flex", gap: "10px" }}>
+                                        <button
+                                            onClick={() => setSelectedInvoiceOrder(null)}
+                                            className="btn-secondary"
+                                            style={{ padding: "10px 18px", fontSize: "13px" }}
+                                        >
+                                            Close
+                                        </button>
+                                        <button
+                                            onClick={() => window.print()}
+                                            style={{
+                                                padding: "10px 20px",
+                                                borderRadius: "8px",
+                                                backgroundColor: "#0f172a",
+                                                color: "#fff",
+                                                fontWeight: "700",
+                                                fontSize: "14px",
+                                                border: "none",
+                                                cursor: "pointer",
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                gap: "8px"
+                                            }}
+                                        >
+                                            <FiPrinter /> Print Official GST Invoice
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        </div>,
+                        document.body
                     )}
 
                 </div>
