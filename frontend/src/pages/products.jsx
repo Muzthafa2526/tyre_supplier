@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import api, { getMediaUrl } from "../api/axios";
 import { FiArrowLeft, FiSearch, FiX, FiCheck, FiShoppingBag, FiLayers, FiPhone } from "react-icons/fi";
@@ -499,14 +500,20 @@ function Products() {
                 )}
 
                 {/* ── ORDER MODAL ── */}
-                {selectedProduct && (
-                    <div style={{
-                        position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-                        backgroundColor: "rgba(0,0,0,0.75)",
-                        backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        zIndex: 2000, padding: "16px"
-                    }} className="animate-fade-in">
+                {selectedProduct && createPortal(
+                    <div
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) setSelectedProduct(null);
+                        }}
+                        style={{
+                            position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+                            width: "100vw", height: "100vh",
+                            backgroundColor: "rgba(0,0,0,0.75)",
+                            backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            zIndex: 99999, padding: "16px",
+                            boxSizing: "border-box"
+                        }} className="animate-fade-in">
                         <div style={{
                             backgroundColor: "var(--bg-modal)", border: "1px solid var(--border-card)",
                             padding: "26px", borderRadius: "16px", width: "100%",
@@ -533,130 +540,148 @@ function Products() {
                                     <FiShoppingBag />
                                 </div>
                                 <div>
-                                    <h2 style={{ fontSize: "17px", fontWeight: "800", margin: 0 }}>Confirm Order</h2>
-                                    <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Apollo Authorized Direct Dispatch</span>
+                                    <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "var(--text-primary)" }}>
+                                        Direct WhatsApp Order
+                                    </h3>
+                                    <p style={{ margin: 0, fontSize: "12px", color: "var(--text-secondary)" }}>
+                                        Immediate dispatch confirmation
+                                    </p>
                                 </div>
                             </div>
 
-                            {/* Product Summary */}
+                            {orderSuccess && (
+                                <div style={{
+                                    display: "flex", alignItems: "center", gap: "8px",
+                                    backgroundColor: "rgba(16, 185, 129, 0.15)", border: "1px solid #10b981",
+                                    color: "#10b981", padding: "10px 14px", borderRadius: "10px",
+                                    marginBottom: "14px", fontSize: "13px", fontWeight: "600"
+                                }}>
+                                    <FiCheck size={16} /> Order placed! Redirecting to WhatsApp...
+                                </div>
+                            )}
+
+                            {orderError && (
+                                <div style={{
+                                    backgroundColor: "rgba(239, 68, 68, 0.15)", border: "1px solid #ef4444",
+                                    color: "#ef4444", padding: "10px 14px", borderRadius: "10px",
+                                    marginBottom: "14px", fontSize: "13px"
+                                }}>
+                                    {orderError}
+                                </div>
+                            )}
+
+                            {/* Product mini card */}
                             <div style={{
-                                backgroundColor: "var(--bg-input)", border: "1px solid var(--border-color)",
-                                borderRadius: "10px", padding: "12px", marginBottom: "16px",
-                                display: "flex", gap: "12px", alignItems: "center"
+                                display: "flex", gap: "12px", alignItems: "center",
+                                backgroundColor: "var(--bg-input)", padding: "12px",
+                                borderRadius: "10px", marginBottom: "16px", border: "1px solid var(--border-color)"
                             }}>
                                 <div style={{
-                                    width: "52px", height: "52px", borderRadius: "8px",
-                                    backgroundColor: "var(--bg-card)", border: "1px solid var(--border-color)",
-                                    display: "flex", alignItems: "center", justifyContent: "center",
-                                    overflow: "hidden", flexShrink: 0
+                                    width: "48px", height: "48px", borderRadius: "8px",
+                                    backgroundColor: "var(--bg-card)", display: "flex",
+                                    alignItems: "center", justifyContent: "center", flexShrink: 0
                                 }}>
                                     <img
                                         src={getTyreImageUrl(selectedProduct)}
                                         alt={selectedProduct.material}
-                                        style={{ width: "88%", height: "88%", objectFit: "contain" }}
-                                        onError={e => { e.target.src = getDefaultTyreImage(selectedProduct); }}
+                                        style={{ width: "90%", height: "90%", objectFit: "contain" }}
                                     />
                                 </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontWeight: "800", fontSize: "13px", color: "var(--text-primary)", marginBottom: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                <div style={{ minWidth: 0 }}>
+                                    <div style={{
+                                        fontSize: "13.5px", fontWeight: "800", color: "var(--text-primary)",
+                                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
+                                    }}>
                                         {selectedProduct.material}
                                     </div>
-                                    <div style={{ display: "flex", gap: "6px", fontSize: "11px", color: "var(--text-secondary)", flexWrap: "wrap" }}>
-                                        <span>{selectedProduct.rim_size || "Standard"}</span>
-                                        {selectedProduct.ply_rating && <span>· {selectedProduct.ply_rating}</span>}
-                                        {selectedProduct.tyre_type && <span>· {selectedProduct.tyre_type}</span>}
+                                    <div style={{ fontSize: "11.5px", color: "var(--text-muted)", marginTop: "2px" }}>
+                                        {selectedProduct.tyre_type} • {selectedProduct.ply_rating || "Standard"} • Rim {selectedProduct.rim_size}
                                     </div>
-                                    {showPrices && Number(selectedProduct.invoice_price || selectedProduct.top_price) > 0 && (
-                                        <div style={{ fontSize: "13px", fontWeight: "800", color: "var(--accent-primary)", marginTop: "2px" }}>
-                                            &#8377;{Number(selectedProduct.invoice_price || selectedProduct.top_price).toLocaleString("en-IN")} / tyre
-                                        </div>
-                                    )}
                                 </div>
                             </div>
 
                             <form onSubmit={handleOrderSubmit}>
                                 <div style={{ marginBottom: "12px" }}>
-                                    <label style={{ display: "block", marginBottom: "5px", color: "var(--text-secondary)", fontSize: "12.5px", fontWeight: "600" }}>Full Name *</label>
+                                    <label style={{ display: "block", fontSize: "12px", fontWeight: "700", marginBottom: "5px", color: "var(--text-secondary)" }}>
+                                        Customer / Business Name *
+                                    </label>
                                     <input
-                                        type="text" required placeholder="e.g. Rajesh Sharma"
-                                        style={{
-                                            width: "100%", padding: "10px 12px", borderRadius: "8px",
-                                            border: "1px solid var(--border-color)", backgroundColor: "var(--bg-input)",
-                                            color: "var(--text-primary)", fontSize: "13px", outline: "none"
-                                        }}
+                                        type="text"
+                                        placeholder="e.g. Ramesh Transport / Rahul"
                                         value={formData.customer_name}
-                                        onChange={e => setFormData({ ...formData, customer_name: e.target.value })}
-                                    />
-                                </div>
-
-                                <div style={{ marginBottom: "12px" }}>
-                                    <label style={{ display: "block", marginBottom: "5px", color: "var(--text-secondary)", fontSize: "12.5px", fontWeight: "600" }}>WhatsApp Number *</label>
-                                    <input
-                                        type="tel" required placeholder="e.g. 9876543210"
+                                        onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
                                         style={{
                                             width: "100%", padding: "10px 12px", borderRadius: "8px",
                                             border: "1px solid var(--border-color)", backgroundColor: "var(--bg-input)",
                                             color: "var(--text-primary)", fontSize: "13px", outline: "none"
                                         }}
-                                        value={formData.customer_phone}
-                                        onChange={e => setFormData({ ...formData, customer_phone: e.target.value })}
+                                        required
                                     />
                                 </div>
 
                                 <div style={{ marginBottom: "12px" }}>
-                                    <label style={{ display: "block", marginBottom: "5px", color: "var(--text-secondary)", fontSize: "12.5px", fontWeight: "600" }}>Quantity *</label>
-                                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                        <button type="button"
-                                            onClick={() => setFormData(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
-                                            style={{
-                                                width: "34px", height: "34px", borderRadius: "8px",
-                                                border: "1px solid var(--border-color)", backgroundColor: "var(--bg-input)",
-                                                color: "var(--text-primary)", fontSize: "18px", cursor: "pointer",
-                                                display: "flex", alignItems: "center", justifyContent: "center"
-                                            }}>-</button>
-                                        <input type="number" min="1" required
-                                            style={{
-                                                flex: 1, padding: "8px", borderRadius: "8px",
-                                                border: "1px solid var(--border-color)", backgroundColor: "var(--bg-input)",
-                                                color: "var(--text-primary)", textAlign: "center",
-                                                fontWeight: "700", fontSize: "15px", outline: "none"
-                                            }}
-                                            value={formData.quantity}
-                                            onChange={e => setFormData({ ...formData, quantity: Math.max(1, parseInt(e.target.value, 10) || 1) })}
-                                        />
-                                        <button type="button"
-                                            onClick={() => setFormData(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
-                                            style={{
-                                                width: "34px", height: "34px", borderRadius: "8px",
-                                                border: "1px solid var(--border-color)", backgroundColor: "var(--bg-input)",
-                                                color: "var(--text-primary)", fontSize: "18px", cursor: "pointer",
-                                                display: "flex", alignItems: "center", justifyContent: "center"
-                                            }}>+</button>
+                                    <label style={{ display: "block", fontSize: "12px", fontWeight: "700", marginBottom: "5px", color: "var(--text-secondary)" }}>
+                                        WhatsApp Phone Number *
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        placeholder="e.g. 9876543210"
+                                        value={formData.customer_phone}
+                                        onChange={(e) => setFormData({ ...formData, customer_phone: e.target.value })}
+                                        style={{
+                                            width: "100%", padding: "10px 12px", borderRadius: "8px",
+                                            border: "1px solid var(--border-color)", backgroundColor: "var(--bg-input)",
+                                            color: "var(--text-primary)", fontSize: "13px", outline: "none"
+                                        }}
+                                        required
+                                    />
+                                </div>
+
+                                <div style={{ marginBottom: "14px" }}>
+                                    <label style={{ display: "block", fontSize: "12px", fontWeight: "700", marginBottom: "5px", color: "var(--text-secondary)" }}>
+                                        Order Quantity (Tyres)
+                                    </label>
+                                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                        {[1, 2, 4, 6, 10].map((qty) => (
+                                            <button
+                                                key={qty}
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, quantity: qty })}
+                                                style={{
+                                                    flex: 1, padding: "8px 0", borderRadius: "8px",
+                                                    border: formData.quantity === qty ? "1.5px solid var(--accent-primary)" : "1px solid var(--border-color)",
+                                                    backgroundColor: formData.quantity === qty ? "var(--accent-primary)" : "var(--bg-input)",
+                                                    color: formData.quantity === qty ? "#000" : "var(--text-primary)",
+                                                    fontWeight: "700", fontSize: "13px", cursor: "pointer"
+                                                }}
+                                            >
+                                                {qty}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
 
                                 <div style={{ marginBottom: "14px" }}>
-                                    <label style={{ display: "block", marginBottom: "5px", color: "var(--text-secondary)", fontSize: "12.5px", fontWeight: "600" }}>
-                                        Delivery Notes (Optional)
+                                    <label style={{ display: "block", fontSize: "12px", fontWeight: "700", marginBottom: "5px", color: "var(--text-secondary)" }}>
+                                        Delivery Address / City (Optional)
                                     </label>
                                     <textarea
-                                        rows="2"
-                                        placeholder="e.g. Mumbai Workshop, need GST invoice"
+                                        rows={2}
+                                        placeholder="e.g. Near New Bus Stand, Salem"
+                                        value={formData.address}
+                                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                                         style={{
-                                            width: "100%", padding: "9px 12px", borderRadius: "8px",
+                                            width: "100%", padding: "8px 12px", borderRadius: "8px",
                                             border: "1px solid var(--border-color)", backgroundColor: "var(--bg-input)",
-                                            color: "var(--text-primary)", fontSize: "13px",
-                                            outline: "none", resize: "none"
+                                            color: "var(--text-primary)", fontSize: "13px", outline: "none", resize: "none"
                                         }}
-                                        value={formData.notes}
-                                        onChange={e => setFormData({ ...formData, notes: e.target.value })}
                                     />
                                 </div>
 
                                 {/* Order Summary */}
                                 <div style={{
-                                    padding: "11px 13px", borderRadius: "9px",
-                                    backgroundColor: "var(--badge-bg)", border: "1px solid var(--border-highlight)",
+                                    backgroundColor: "var(--bg-input)", borderRadius: "10px", padding: "12px 14px",
+                                    border: "1px solid var(--border-color)",
                                     marginBottom: "16px"
                                 }}>
                                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12.5px", marginBottom: "4px" }}>
@@ -691,7 +716,8 @@ function Products() {
                                 </div>
                             </form>
                         </div>
-                    </div>
+                    </div>,
+                    document.body
                 )}
             </div>
 
