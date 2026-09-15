@@ -65,7 +65,9 @@ function Products() {
     const [selectedPly, setSelectedPly] = useState("ALL"); // ALL, 6PR, 8PR, 12PR, 14PR, 16PR, 18PR, 20PR
 
     const [selectedProduct, setSelectedProduct] = useState(null);
-    const [formData, setFormData] = useState({ customer_name: "", customer_phone: "", quantity: 1, notes: "" });
+    const [formData, setFormData] = useState({ customer_name: "", customer_phone: "", quantity: 1, address: "", notes: "" });
+    const [orderSuccess, setOrderSuccess] = useState(false);
+    const [orderError, setOrderError] = useState("");
     const [showPrices, setShowPrices] = useState(true);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -98,26 +100,32 @@ function Products() {
         const qty = parseInt(formData.quantity, 10);
 
         if (!name || name.length < 2) {
-            alert("Please enter a valid full name (at least 2 characters).");
+            setOrderError("Please enter a valid full name (at least 2 characters).");
             return;
         }
 
         if (!phoneDigits || phoneDigits.length < 10) {
-            alert("Please enter a valid 10-digit WhatsApp/mobile number.");
+            setOrderError("Please enter a valid 10-digit WhatsApp/mobile number.");
             return;
         }
 
         if (!qty || qty < 1) {
-            alert("Please specify a quantity of at least 1 unit.");
+            setOrderError("Please specify a quantity of at least 1 unit.");
             return;
         }
 
         setSubmitting(true);
+        setOrderError("");
+
+        const noteParts = [];
+        if (formData.notes) noteParts.push(formData.notes.trim());
+        if (formData.address) noteParts.push(`Address: ${formData.address.trim()}`);
+        noteParts.push(`SKU: ${selectedProduct.material_code || 'N/A'} [Type: ${selectedProduct.tyre_type || 'TL'}]`);
 
         const payload = {
             customer_name: name,
             customer_phone: phoneDigits,
-            notes: `${formData.notes ? formData.notes + ' | ' : ''}SKU: ${selectedProduct.material_code || 'N/A'} [Type: ${selectedProduct.tyre_type || 'TL'}]`,
+            notes: noteParts.join(" | "),
             items: [
                 {
                     product_id: selectedProduct.id,
@@ -128,18 +136,22 @@ function Products() {
 
         api.post("/api/orders/create/", payload)
             .then(res => {
+                setOrderSuccess(true);
+                setOrderError("");
                 const whatsappUrl = res.data?.order?.whatsapp_url || res.data?.whatsapp_url;
-                if (whatsappUrl) {
-                    window.open(whatsappUrl, "_blank");
-                } else {
-                    alert("Order inquiry submitted successfully! Our dispatch team will contact you shortly.");
-                }
-                setSelectedProduct(null);
-                setFormData({ customer_name: "", customer_phone: "", quantity: 1, notes: "" });
+                setTimeout(() => {
+                    if (whatsappUrl) {
+                        window.open(whatsappUrl, "_blank");
+                    }
+                    setSelectedProduct(null);
+                    setOrderSuccess(false);
+                    setFormData({ customer_name: "", customer_phone: "", quantity: 1, address: "", notes: "" });
+                }, 1200);
             })
             .catch(err => {
                 console.error("Error placing order:", err);
-                alert("Failed to place order. Please try contacting us on WhatsApp directly.");
+                const errMsg = err.response?.data?.detail || (typeof err.response?.data === 'string' ? err.response?.data : null) || "Failed to place order. Please try contacting us on WhatsApp directly.";
+                setOrderError(errMsg);
             })
             .finally(() => setSubmitting(false));
     };
@@ -489,7 +501,11 @@ function Products() {
 
                                     {/* CTA */}
                                     <button
-                                        onClick={() => setSelectedProduct(prod)}
+                                        onClick={() => {
+                                            setOrderError("");
+                                            setOrderSuccess(false);
+                                            setSelectedProduct(prod);
+                                        }}
                                         disabled={stock === 0}
                                         className="btn-primary"
                                         style={{
